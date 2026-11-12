@@ -57,27 +57,22 @@ function setActiveStep(n) {
   });
 }
 
+// Exact integer maths: KES = (coins / step) * price of one step. No rounding.
 function calcKes(coins) {
   if (!currentCoin || !coins || coins <= 0) return 0;
-  // price is converted to ten-thousandths of a shilling (an integer) first.
-  if (currentCoin.price_per_1000) {
-    const units = Math.round(parseFloat(currentCoin.price_per_1000) * 10000);
-    return Math.ceil((units * coins) / 10000000);
-  }
-  return Math.ceil(coins / parseFloat(currentCoin.conversion_rate));   // fallback for old API data
+  const step = coinStep();
+  if (coins % step !== 0) return 0;               // only whole steps have a price
+  return (coins / step) * stepPriceKes();
 }
 
 function formatKes(n) {
   return n.toLocaleString('en-KE');
 }
 
-// Each coin is sold in packs whose price is a whole number of shillings.
-// The pack size comes from the API (min_coins = step_coins); config.js is only a fallback.
+// Min purchase, step size and price per step all come from the API (config.js is only a fallback).
 function coinMin()  { return (currentCoin && currentCoin.min_coins)  || CONFIG.COIN_MIN; }
 function coinStep() { return (currentCoin && currentCoin.step_coins) || CONFIG.COIN_STEP; }
-function packPriceKes() {
-  return (currentCoin && currentCoin.pack_price_kes) || calcKes(coinStep());
-}
+function stepPriceKes() { return Number(currentCoin && currentCoin.step_price_kes) || 0; }
 
 // NEW: smallest valid amount that is >= n
 function snapUp(n) {
@@ -85,19 +80,20 @@ function snapUp(n) {
   return Math.max(coinMin(), Math.ceil(n / step) * step);
 }
 
-// NEW: rule text under the field
+// Rule text under the field
 function ruleText() {
-  return `Sold in packs of ${coinStep().toLocaleString('en-KE')} coins ` +
-         `(KES ${formatKes(packPriceKes())} per pack). Minimum: 1 pack.`;
+  const step = coinStep().toLocaleString('en-KE');
+  return `Minimum ${coinMin().toLocaleString('en-KE')} coins, then in multiples of ${step} ` +
+         `(KES ${formatKes(stepPriceKes())} per ${step} coins).`;
 }
 
-// NEW: quick-pick buttons (1, 2, 3, 5, 10 packs; fewer for very large packs)
+// Quick-pick buttons: 1x, 2x, 3x, 5x, 10x the minimum (fewer for very large minimums),
+// each snapped up to a valid amount.
 function buildChips() {
   const box = document.getElementById('coinChips');
-  const pack = coinStep();
-  const multiples = pack >= 100000 ? [1, 2, 3] : [1, 2, 3, 5, 10];
+  const multiples = coinMin() >= 100000 ? [1, 2, 3] : [1, 2, 3, 5, 10];
   const chips = multiples.map((m) => {
-    const coins = pack * m;
+    const coins = snapUp(coinMin() * m);
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'coin-chip';
@@ -218,7 +214,7 @@ coinQty.addEventListener('change', () => {
   coinQty.value = fixed;
   onCoinInput();
   const who = currentCoin ? currentCoin.name : 'This app';
-  showNote(`Adjusted to ${fixed.toLocaleString('en-KE')} coins. ${who} is sold in packs of ${coinStep().toLocaleString('en-KE')}.`);
+  showNote(`Adjusted to ${fixed.toLocaleString('en-KE')} coins. ${who} has a ${coinMin().toLocaleString('en-KE')} minimum and sells in multiples of ${coinStep().toLocaleString('en-KE')}.`);
 });
 
 let errorTimeout = null;
@@ -385,7 +381,6 @@ function showResultState(state) {
 }
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', init);
 document.addEventListener('DOMContentLoaded', () => {
   validateStep1();   // disabled until all inputs are filled
   init();

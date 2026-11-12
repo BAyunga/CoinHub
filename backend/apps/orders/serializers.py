@@ -43,12 +43,11 @@ class RechargeRequestSerializer(serializers.Serializer):
     def validate(self, attrs):
         coin  = attrs["coin_type_slug"]      # the CoinType object (see validate_coin_type_slug)
         coins = attrs["coins_requested"]
-        pack  = coin.step_coins
-        if coins < coin.min_coins or coins % pack != 0:
+        if not coin.is_valid_quantity(coins):
             raise serializers.ValidationError({
                 "coins_requested": (
-                    f"{coin.name} is sold in packs of {pack:,} coins (KES {coin.pack_price_kes:,} per pack). "
-                    f"Choose {pack:,}, {2 * pack:,}, {3 * pack:,} and so on."
+                    f"{coin.name}: minimum {coin.min_coins:,} coins, in multiples of "
+                    f"{coin.step_coins:,} (KES {coin.step_price_kes:,} per {coin.step_coins:,} coins)."
                 )
             })
         return attrs
