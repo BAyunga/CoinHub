@@ -171,7 +171,7 @@ JAZZMIN_SETTINGS = {
         {"name": "API Docs", "url": "/api/", "new_window": True},
     ],
     "usermenu_links": [
-        {"name": "Support", "url": "#", "new_window": True},
+        {"name": "Request a change / Support", "url": "https://wa.me/254700000000", "new_window": True},
         {"model": "auth.user"},
     ],
     "show_sidebar": True,

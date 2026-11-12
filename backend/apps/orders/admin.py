@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.core.exceptions import PermissionDenied
 from django.utils import timezone
 from django.utils.html import format_html
 from django.urls import path
@@ -89,6 +90,8 @@ class OrderAdmin(admin.ModelAdmin):
         Fires automatically when 'Ship Coins' is clicked. Captures who 
         is logged in, logs the time, changes the status, and returns instantly.
         """
+        if not self.has_change_permission(request):
+            raise PermissionDenied
         try:
             order = Order.objects.get(pk=order_id)
             if order.status == ORDER_PAID:
@@ -108,13 +111,23 @@ class OrderAdmin(admin.ModelAdmin):
     # ── Role-Based Permissions Logic ──────────────────────────────────────────
 
     def get_readonly_fields(self, request, obj=None):
+        # Agents: everything locked.
         if hasattr(request.user, 'staff_profile') and request.user.staff_profile.role == Role.AGENT:
             return [f.name for f in Order._meta.fields] + ["created_at", "updated_at"]
-        return ("reference", "coin_type", "app_user_id", "phone_number",
-                "coins_requested", "amount_paid", "created_at", "updated_at")
+        locked = ["reference", "coin_type", "app_user_id", "phone_number", "coins_requested",
+                  "amount_paid", "loaded_at", "loaded_by", "created_at", "updated_at"]
+        # Status only changes through Ship Coins; only a superuser can correct it by hand.
+        if not request.user.is_superuser:
+            locked.append("status")
+        return tuple(locked)
 
-    def has_change_permission(self, request, obj=None):
-        return True
+    # Orders are created by customers through the API, never by hand.
+    def has_add_permission(self, request):
+        return False
+
+    # Financial records: only a superuser may delete (this also hides "Delete selected").
+    def has_delete_permission(self, request, obj=None):
+        return request.user.is_superuser
 
     # ── Bulk Dropdown Fallback Action ─────────────────────────────────────────
 
@@ -135,6 +148,7 @@ class OrderAdmin(admin.ModelAdmin):
         self.message_user(request, f"Successfully marked {count} order(s) as Loaded.", level='success')
 
     mark_as_loaded_action.short_description = "Mark selected orders as Manually Loaded"
+    mark_as_loaded_action.allowed_permissions = ("change",)
 
     # ── Visual Display Filters ────────────────────────────────────────────────
 
