@@ -9,10 +9,10 @@ EXPECTED = {
     "tello":      (10_000, 10_000, 15, [(30_000, 45)]),
     "dreamparty": (10_000, 10_000, 15, [(10_000, 15)]),
     "minemo":     (100_000, 100_000, 15, [(100_000, 15), (300_000, 45)]),
-    "baat":       (9_000, 1_000, 15, [(9_000, 135), (11_000, 165), (10_000, 150)]),
-    "crush":      (9_000, 1_000, 15, [(9_000, 135)]),
-    "hala":       (9_000, 1_000, 15, [(9_000, 135)]),
-    "boloup":     (9_000, 1_000, 15, [(9_000, 135), (12_000, 180)]),
+    "baat":       (10_000, 1_000, 15, [(10_000, 150), (11_000, 165)]),
+    "crush":      (1_000, 1_000, 15, [(1_000, 15), (5_000, 75)]),
+    "hala":       (10_000, 1_000, 15, [(10_000, 150), (13_000, 195)]),
+    "boloup":     (10_000, 1_000, 15, [(10_000, 150), (12_000, 180)]),
     "taka":       (5_000, 1_000, 15, [(5_000, 75), (6_000, 90)]),
     "mashi":      (600_000, 9_375, 1, [(600_000, 64), (609_375, 65), (1_200_000, 128)]),
     "poppo":      (8_000, 8_000, 111, [(8_000, 111), (16_000, 222)]),
@@ -40,10 +40,16 @@ class NewPriceListTests(TestCase):
 class QuantityRulesTests(TestCase):
     def test_invalid_quantities_rejected(self):
         baat = CoinType.objects.get(slug="baat")
-        for bad in (0, 1_000, 8_999, 9_500, 10_001):
+        for bad in (0, 1_000, 9_000, 9_500, 10_001):
             self.assertFalse(baat.is_valid_quantity(bad), bad)
             with self.assertRaises(ValueError):
                 baat.calculate_kes(bad)
+
+    def test_crush_minimum_is_1000(self):
+        crush = CoinType.objects.get(slug="crush")
+        self.assertTrue(crush.is_valid_quantity(1_000))
+        self.assertFalse(crush.is_valid_quantity(500))
+        self.assertFalse(crush.is_valid_quantity(1_500))
 
     def test_mashi_and_poppo_only_whole_kes(self):
         mashi = CoinType.objects.get(slug="mashi")

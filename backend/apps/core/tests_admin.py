@@ -30,8 +30,8 @@ class AdminRestrictionTests(TestCase):
         cls.coin = CoinType.objects.get(slug="baat")
         cls.order = Order.objects.create(
             reference="CH-TEST-1", coin_type=cls.coin, app_user_id="1", phone_number="254712345678",
-            coins_requested=9000, amount_paid=135, status=ORDER_PAID)
-        cls.payment = Payment.objects.create(order=cls.order, phone_number="254712345678", amount=135)
+            coins_requested=10000, amount_paid=150, status=ORDER_PAID)
+        cls.payment = Payment.objects.create(order=cls.order, phone_number="254712345678", amount=150)
 
     def as_client(self):
         self.client.force_login(self.client_user)
@@ -64,7 +64,7 @@ class AdminRestrictionTests(TestCase):
         self.assertEqual(r.status_code, 302)
         self.coin.refresh_from_db()
         self.assertEqual(self.coin.step_price_kes, 16)
-        self.assertEqual((self.coin.min_coins, self.coin.step_coins, self.coin.slug), (9000, 1000, "baat"))
+        self.assertEqual((self.coin.min_coins, self.coin.step_coins, self.coin.slug), (10000, 1000, "baat"))
 
     def test_developer_still_has_full_control(self):
         self.as_dev()
