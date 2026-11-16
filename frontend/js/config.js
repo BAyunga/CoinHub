@@ -11,6 +11,7 @@ const CONFIG = {
     
   POLL_INTERVAL_MS: 3000,
   POLL_MAX_ATTEMPTS: 20,
-  COIN_MIN: 1000,   // minimum coins per purchase
-  COIN_STEP: 1000,  // coins must be a multiple of this  
+  // Fallbacks only. The real minimum and step come from the API for each coin (set in the database).
+  COIN_MIN: 1000,
+  COIN_STEP: 1000,
 };

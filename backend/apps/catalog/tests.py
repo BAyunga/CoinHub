@@ -7,14 +7,14 @@ EXPECTED = {
     "glow":       (10_000, 10_000, 15, [(10_000, 15), (20_000, 30)]),
     "dessparty":  (10_000, 10_000, 15, [(10_000, 15)]),
     "tello":      (10_000, 10_000, 15, [(30_000, 45)]),
-    "dreamparty": (10_000, 10_000, 15, [(10_000, 15)]),
+    "dreamparty": (50_000, 10_000, 15, [(50_000, 75), (60_000, 90), (100_000, 150)]),
     "minemo":     (100_000, 100_000, 15, [(100_000, 15), (300_000, 45)]),
     "baat":       (10_000, 1_000, 15, [(10_000, 150), (11_000, 165)]),
     "crush":      (1_000, 1_000, 15, [(1_000, 15), (5_000, 75)]),
     "hala":       (1_000, 1_000, 15, [(1_000, 15), (13_000, 195)]),
     "boloup":     (1_000, 1_000, 15, [(1_000, 15), (12_000, 180)]),
     "taka":       (5_000, 1_000, 15, [(5_000, 75), (6_000, 90)]),
-    "mashi":      (600_000, 9_375, 1, [(600_000, 64), (609_375, 65), (1_200_000, 128)]),
+    "mashi":      (600_000, 200_000, 21, [(600_000, 63), (800_000, 84), (1_200_000, 126)]),
     "poppo":      (8_000, 8_000, 111, [(8_000, 111), (16_000, 222)]),
 }
 
@@ -45,6 +45,13 @@ class QuantityRulesTests(TestCase):
             with self.assertRaises(ValueError):
                 baat.calculate_kes(bad)
 
+    def test_dream_party_minimum_is_50000(self):
+        dream = CoinType.objects.get(slug="dreamparty")
+        self.assertTrue(dream.is_valid_quantity(50_000))
+        self.assertTrue(dream.is_valid_quantity(60_000))
+        self.assertFalse(dream.is_valid_quantity(40_000))      # below the minimum
+        self.assertFalse(dream.is_valid_quantity(55_000))      # not a multiple of 10,000
+
     def test_crush_minimum_is_1000(self):
         crush = CoinType.objects.get(slug="crush")
         self.assertTrue(crush.is_valid_quantity(1_000))
@@ -56,11 +63,14 @@ class QuantityRulesTests(TestCase):
         poppo = CoinType.objects.get(slug="poppo")
         self.assertFalse(mashi.is_valid_quantity(600_001))
         self.assertFalse(mashi.is_valid_quantity(601_010))
+        self.assertFalse(mashi.is_valid_quantity(609_375))     # was valid under the old KES 64 rate
+        self.assertFalse(mashi.is_valid_quantity(700_000))
+        self.assertFalse(mashi.is_valid_quantity(400_000))     # below the 600,000 minimum
         self.assertFalse(poppo.is_valid_quantity(8_001))
         self.assertFalse(poppo.is_valid_quantity(9_100))
         # every valid Mashi amount is a whole number of KES with no remainder
-        for n in range(64, 200):
-            self.assertEqual(mashi.calculate_kes(n * 9_375), n)
+        for n in range(3, 60):
+            self.assertEqual(mashi.calculate_kes(n * 200_000), n * 21)
 
 
 class RechargeApiValidationTests(TestCase):
@@ -91,5 +101,5 @@ class RechargeApiValidationTests(TestCase):
         slugs = {c["slug"] for c in rows}
         self.assertNotIn("boomlive", slugs)
         mashi = next(c for c in rows if c["slug"] == "mashi")
-        self.assertEqual((mashi["min_coins"], mashi["step_coins"], mashi["step_price_kes"]), (600_000, 9_375, 1))
+        self.assertEqual((mashi["min_coins"], mashi["step_coins"], mashi["step_price_kes"]), (600_000, 200_000, 21))
         self.assertNotIn("price_per_1000", mashi)
