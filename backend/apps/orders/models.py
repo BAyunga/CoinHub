@@ -46,3 +46,12 @@ class Order(TimestampedModel):
 
     def __str__(self):
         return f"{self.reference} — {self.coin_type.name} ({self.status})"
+
+class OrderReferenceCounter(models.Model):
+    """One row per day: the last order sequence number handed out that day."""
+
+    day = models.DateField(unique=True)
+    last_value = models.PositiveIntegerField(default=0)
+
+    def __str__(self):
+        return f"{self.day}: {self.last_value}"
