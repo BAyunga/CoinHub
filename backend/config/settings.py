@@ -105,6 +105,15 @@ STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [] 
 
+# serve the website (frontend/) from this same service.
+# In the Docker image the folder is /app/frontend (see the Dockerfile). When you run Django
+# straight from the repo, frontend/ sits next to backend/, so fall back to that.
+_FRONTEND_DIR = BASE_DIR / "frontend"
+if not _FRONTEND_DIR.is_dir():
+    _FRONTEND_DIR = BASE_DIR.parent / "frontend"
+WHITENOISE_ROOT = _FRONTEND_DIR
+WHITENOISE_INDEX_FILE = True   # "/" serves index.html
+
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
