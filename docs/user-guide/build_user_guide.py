@@ -27,7 +27,7 @@ TECH_NAME = "[Gilks97]"
 TECH_PHONE = "[Phone / WhatsApp number]"
 TECH_EMAIL = "[moseti97@gmail.com]"
 TECH_HOURS = "[Support hours, e.g. Mon-Fri 8am-6pm]"
-WEBSITE = "https://coinhub-kjam.onrender.com"
+WEBSITE = "https://coinhub.co.ke"
 # ============================================================================
 
 OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "CoinHub-User-Guide.pdf")

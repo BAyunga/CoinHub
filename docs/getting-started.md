@@ -66,6 +66,7 @@ On start the web container (see `docker/entrypoint.sh`):
 | http://localhost:8080/ | Customer website |
 | http://localhost:8080/admin/ | Admin panel (use your `DJANGO_SUPERUSER_*` login) |
 | http://localhost:8080/api/coins/ | Coins API |
+| http://localhost:8000/ | The same website served directly by Django (no Nginx), the way production runs |
 
 Default admin credentials (set in `.env`):
 - **Username:** `admin`
@@ -104,7 +105,7 @@ python manage.py createsuperuser
 python manage.py runserver
 ```
 
-Serve the frontend separately, for example `cd frontend && python -m http.server 8080`. Because the frontend is then on a different origin from Django, point `API_BASE` in `frontend/js/config.js` at `http://localhost:8000/api` and add `http://localhost:8080` to `CORS_ALLOWED_ORIGINS`.
+Django serves the website too. After `runserver`, open http://localhost:8000/ (it finds the `frontend/` folder next to `backend/`). No separate web server, CORS setting or `API_BASE` change is needed.
 
 ## Receiving Daraja callbacks locally
 

@@ -1,11 +1,10 @@
 # Deployment
 
-CoinHub currently runs on **Render** as two services plus a hosted PostgreSQL database:
+CoinHub currently runs on **Render** as **one web service** plus a hosted PostgreSQL database. The same Django service serves the website, the API and the admin panel:
 
 | Piece | Where | Notes |
 |---|---|---|
-| Backend (Django API and admin) | Render web service, built from the `Dockerfile` | Public URL, for example `https://coinhub-uzzu.onrender.com` |
-| Frontend | Render static site, publishing the `frontend/` folder | Public URL, for example `https://coinhub-kjam.onrender.com` |
+| Website, API and admin | One Render web service, built from the `Dockerfile` | Custom domain `https://coinhub.co.ke` (and `www`) |
 | Database | Hosted PostgreSQL (for example Neon) | Connected with `DATABASE_URL` and SSL |
 
 Confirm the exact service settings (branch, build, publish directory) in your Render dashboard. They are not stored in this repository.
@@ -28,36 +27,61 @@ Set these in the Render dashboard, never in the repository:
 |---|---|
 | `SECRET_KEY` | New long random value |
 | `DEBUG` | `False` |
-| `ALLOWED_HOSTS` | The backend host name |
-| `CORS_ALLOWED_ORIGINS` | The frontend URL (with `https://`) |
+| `ALLOWED_HOSTS` | The site host names, for example `coinhub.co.ke,www.coinhub.co.ke` |
+| `CSRF_TRUSTED_ORIGINS` | The site URLs with `https://`, for example `https://coinhub.co.ke,https://www.coinhub.co.ke`. The name is **plural**; a variable called `CSRF_TRUSTED_ORIGIN` is ignored |
+| `CORS_ALLOWED_ORIGINS` | Not needed while one service serves everything (same origin) |
 | `DATABASE_URL` | The hosted database URL (SSL on) |
 | `DARAJA_ENV` | `production` |
 | `DARAJA_CONSUMER_KEY`, `DARAJA_CONSUMER_SECRET` | Production Daraja app credentials |
 | `DARAJA_SHORTCODE`, `DARAJA_TILL_NUMBER`, `DARAJA_PASSKEY` | Production values for your till |
-| `DARAJA_CALLBACK_URL` | `https://<backend-host>/api/payments/daraja/callback/` |
+| `DARAJA_CALLBACK_URL` | `https://<site-host>/api/payments/daraja/callback/` |
 | `DJANGO_SUPERUSER_*` | Real admin account with a strong, unique password |
 | `THROTTLE_ANON`, `THROTTLE_USER` | Rates suited to real traffic |
 
 With `DEBUG=False`, Django redirects HTTP to HTTPS and marks cookies secure. See [Configuration](configuration.md) for every variable.
 
-## Frontend service
+## Website (served by Django)
 
-A static site with the **publish directory** set to `frontend`. There is no build step. `frontend/js/config.js` must contain the backend's public URL in `API_BASE` (used when the page is not on localhost).
+The website is not a separate service. The `Dockerfile` copies the `frontend/` folder into the image (`/app/frontend`), and `backend/config/settings.py` tells WhiteNoise to serve it at the site root:
 
-Browsers cache JavaScript aggressively. After a change that must reach everyone immediately, bump the version in the script tags (for example `js/recharge.js?v=3`).
+```python
+WHITENOISE_ROOT = <frontend folder>    # /app/frontend in the image, ../frontend when run from the repo
+WHITENOISE_INDEX_FILE = True           # "/" serves index.html
+```
+
+| Path | Served by |
+|---|---|
+| `/`, `/recharge.html`, `/js/...`, `/css/...`, `/icons/...` | WhiteNoise (files from `frontend/`) |
+| `/api/...` | Django REST API |
+| `/admin/` | Django admin |
+| `/static/...` | WhiteNoise (collected admin assets) |
+
+`frontend/js/config.js` uses `API_BASE: '/api'`, because the website and the API share one origin. No CORS setup is needed.
+
+Everything in `frontend/` is public. Never put secrets there.
+
+WhiteNoise lets browsers cache these files for 60 seconds. After a change that must reach everyone immediately, bump the version in the script tags (for example `js/recharge.js?v=5`).
+
+## Custom domain
+
+1. In Render, open the web service, **Settings**, **Custom Domains**, and add `coinhub.co.ke` and `www.coinhub.co.ke`.
+2. Create the DNS records Render shows, and wait until both are **Verified** with a certificate issued.
+3. Update `ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS` and `DARAJA_CALLBACK_URL` (see the table above) and redeploy.
+4. Check `https://coinhub.co.ke/` (website), `/api/coins/` (JSON) and `/admin/`.
 
 ## Deploying a change
 
 1. Merge to the branch Render watches (normally `main`).
 2. Render rebuilds and redeploys. Migrations run automatically on backend start.
 3. Check the backend logs for `Running migrations` and no errors.
-4. Smoke test: `/api/coins/` returns the expected coins, the recharge page loads, the admin loads.
+4. Smoke test: `/` shows the home page, `/api/coins/` returns the expected coins, the recharge page loads, the admin loads.
 
-**Backend first, then frontend** when a change touches both, so the API accepts what the new page sends.
+The website and the API ship in the same image, so a change that touches both goes live together.
 
 ## Going live checklist
 
-- [ ] `DEBUG=False`, new `SECRET_KEY`, correct `ALLOWED_HOSTS` and `CORS_ALLOWED_ORIGINS`
+- [ ] `DEBUG=False`, new `SECRET_KEY`, correct `ALLOWED_HOSTS` and `CSRF_TRUSTED_ORIGINS`
+- [ ] `/` loads the website and `/api/coins/` returns JSON on the live domain
 - [ ] Production Daraja credentials, till and passkey, with `DARAJA_ENV=production`
 - [ ] Callback URL is public HTTPS and points to the production backend
 - [ ] A successful small real payment, end to end, with the order reaching `paid`

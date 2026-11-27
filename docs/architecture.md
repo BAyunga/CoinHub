@@ -20,16 +20,18 @@ Customer browser
  PostgreSQL                 Safaricom Daraja ──► customer's phone (STK prompt)
 ```
 
+In production the "Static frontend" box is served by the same Django service through WhiteNoise (see below).
+
 ## Two ways it runs
 
 | | Local (compose) | Production (current) |
 |---|---|---|
-| Frontend served by | Nginx container, port 8080 | Render static site |
-| Backend | Django container behind Nginx (`/api/`, `/admin/`) | Render web service (Docker) |
+| Website served by | Nginx container, port 8080 (also by Django itself on port 8000) | The Django service itself, through WhiteNoise |
+| Backend | Django container behind Nginx (`/api/`, `/admin/`) | The same Render web service (Docker) |
 | Database | PostgreSQL container | Hosted PostgreSQL via `DATABASE_URL` |
-| API base URL used by the frontend | `/api` (same origin, proxied by Nginx) | Full backend URL from `frontend/js/config.js` |
+| API base URL used by the frontend | `/api` (same origin, proxied by Nginx) | `/api` (same origin) |
 
-`frontend/js/config.js` decides which one applies: on `localhost` or `127.0.0.1` it uses `/api`; anywhere else it uses the backend URL written in the file.
+`frontend/js/config.js` sets `API_BASE: '/api'` in both setups, because the website and the API always share one origin, so no CORS configuration is needed. The `Dockerfile` copies `frontend/` to `/app/frontend`, and `WHITENOISE_ROOT` in `settings.py` points WhiteNoise at it (when Django runs straight from the repo it falls back to the `frontend/` folder next to `backend/`).
 
 ## The apps
 

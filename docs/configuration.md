@@ -12,8 +12,9 @@ CoinHub is configured through environment variables (read with `python-decouple`
 |---|---|---|
 | `SECRET_KEY` | Django secret key. Long, random, unique per environment | required |
 | `DEBUG` | `True` for local development only. **Must be `False` in production** | `False` |
-| `ALLOWED_HOSTS` | Comma-separated host names, for example `coinhub-uzzu.onrender.com` | `localhost` |
-| `CORS_ALLOWED_ORIGINS` | Comma-separated origins allowed to call the API, for example the frontend URL | `http://localhost:8080` |
+| `ALLOWED_HOSTS` | Comma-separated host names, for example `coinhub.co.ke,www.coinhub.co.ke` | `localhost` |
+| `CSRF_TRUSTED_ORIGINS` | Comma-separated origins (with `https://`) trusted for logins and form posts, for example `https://coinhub.co.ke,https://www.coinhub.co.ke`. The name is plural | `http://localhost:8080,http://127.0.0.1:8080` |
+| `CORS_ALLOWED_ORIGINS` | Origins allowed to call the API from a different website. Not needed while Django serves the site itself (same origin) | `http://localhost:8080,http://127.0.0.1:8080` |
 | `PORT` | Port Gunicorn binds to (Render sets it) | `8000` |
 
 When `DEBUG` is `False`, HTTPS redirection and secure cookies are enabled.
@@ -71,11 +72,11 @@ Each payment uses up to about 21 requests (one to create it plus up to 20 status
 | `backend/config/settings.py` | `COIN_PURCHASE_STEP` | Coins must be a multiple of this (1000) |
 | `frontend/js/config.js` | `COIN_MIN`, `COIN_STEP` | Same rules, for the browser's instant feedback |
 | `frontend/js/config.js` | `POLL_INTERVAL_MS`, `POLL_MAX_ATTEMPTS` | Status polling: every 3000 ms, up to 20 times |
-| `frontend/js/config.js` | `API_BASE` | `/api` on localhost, otherwise the backend URL |
+| `frontend/js/config.js` | `API_BASE` | Always `/api` (the website and the API are served from the same origin) |
 | `backend/config/settings.py` | `JAZZMIN_SETTINGS` | Admin look and feel, custom CSS and JS |
 
 The backend values are the real rules. The frontend values only give faster feedback, so always change both together.
 
 ## Frontend API address
 
-`frontend/js/config.js` contains the production backend URL. If the backend moves to a new address, edit it there and redeploy the frontend.
+`API_BASE` in `frontend/js/config.js` is the relative path `/api`, so it never needs a backend URL while Django serves the website. Only if you host the frontend on a different domain, set it to the full backend URL and add the frontend origin to `CORS_ALLOWED_ORIGINS`.

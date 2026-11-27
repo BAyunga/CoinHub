@@ -21,7 +21,9 @@ Find the symptom, check the likely cause, apply the fix. For payment problems se
 | Continue button stays disabled | A rule is not met, or JavaScript failed | Check User ID (1 to 10 digits), phone (`7XX`, `07XX`, `011`), coins (1,000 minimum, multiples of 1,000). Open the console (F12) for red errors |
 | Fewer coins than expected on the site | Some coins are inactive or missing in **that** database | Compare **Coin Types** in the admin with `/api/coins/`. Local and production databases are separate; run migrations on both |
 | A coin shows a letter instead of an icon | No `frontend/icons/<slug>.png`, or the file name does not match the slug (lowercase) | Add or rename the file and redeploy the frontend |
-| Website cannot reach the API from the deployed frontend | `API_BASE` in `config.js` or `CORS_ALLOWED_ORIGINS` is wrong | Correct them and redeploy |
+| Live home page shows "Not Found - The requested resource was not found on this server" while `/admin/` and `/api/coins/` work | The website files are not in the image, or WhiteNoise cannot find them | Check the `Dockerfile` has `COPY frontend/ /app/frontend/` and `settings.py` sets `WHITENOISE_ROOT` and `WHITENOISE_INDEX_FILE = True`. Look in the deploy logs for "No directory at: .../frontend". Redeploy |
+| Website loads but coins or prices do not, or the browser reports blocked requests to an old address | `API_BASE` in `frontend/js/config.js` still points to a previous backend URL | Set `API_BASE: '/api'`, bump the script `?v=` numbers and redeploy |
+| Admin login or a form post fails with 403 on the live domain | `CSRF_TRUSTED_ORIGINS` is missing or misspelled (a singular `CSRF_TRUSTED_ORIGIN` is ignored) | Set `CSRF_TRUSTED_ORIGINS=https://coinhub.co.ke,https://www.coinhub.co.ke` and redeploy |
 | First page load is very slow on Render | Free service waking up | Wait, or use an always-on plan |
 | Error 429 | Anonymous rate limit reached for that IP | Wait, or raise `THROTTLE_ANON` (see [Configuration](configuration.md)) |
 
