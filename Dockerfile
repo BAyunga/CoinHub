@@ -17,6 +17,9 @@ RUN pip install --no-cache-dir --upgrade pip \
 # ── Copy project ───────────────────────────────────────────────────────────────
 COPY backend/ .
 
+# NEW: the website files (index.html, recharge.html, js/, css/, icons/), served by WhiteNoise
+COPY frontend/ /app/frontend/
+
 # ── Static files & Entrypoint ──────────────────────────────────────────────────
 COPY docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
